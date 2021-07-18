@@ -100,6 +100,30 @@ var SECTION = NOT_STARTED_SECTION
 
 
 
+
+
+
+// Create gradient
+var verticalGrd = ctx.createLinearGradient(0, 0, 0, 600);
+var steps_in_gradient = 200
+for (var i = 0; i < steps_in_gradient; i++) {
+  verticalGrd.addColorStop((i / steps_in_gradient), "black");
+  verticalGrd.addColorStop((i / steps_in_gradient) + (1 / (steps_in_gradient * 2)), "grey");
+}
+
+
+// Create gradient
+var horizontalGrd = ctx.createLinearGradient(0, 0, 800, 0);
+var steps_in_gradient = 200
+for (var i = 0; i < steps_in_gradient; i++) {
+  horizontalGrd.addColorStop((i / steps_in_gradient), "black");
+  horizontalGrd.addColorStop((i / steps_in_gradient) + (1 / (steps_in_gradient * 2)), "grey");
+}
+
+
+
+
+
 function drawBaseImage() {
   ctx.clearRect(0, 0, 800, 600);
   if (SECTION === NOT_STARTED_SECTION) {
@@ -114,6 +138,10 @@ function drawBaseImage() {
   } else if (SECTION === SPACE_TUBE_SECTION) {
 
   } else if (SECTION === CLOUD_SECTION) {
+
+  } else if (SECTION === TUBE_DUO_SECTION) {
+
+  } else if (SECTION === CAR_TUBE_SECTION) {
 
   } else if (SECTION === ENDED_SECTION) {
     ctx.drawImage(video, 0, 0, 800, 600);
@@ -174,6 +202,52 @@ function drawPoseImage(pose) {
       ctx.arc(cloud.x, cloud.y, 20, 0, 2 * Math.PI)
       ctx.stroke();
     }
+  } else if (SECTION === TUBE_DUO_SECTION) {
+
+    // this is the "you look like the tube!"
+    var intersect = averagePoints(pose.leftShoulder, pose.rightShoulder)
+
+    ctx.lineWidth = 50;
+
+    ctx.beginPath()
+    ctx.strokeStyle = horizontalGrd;
+    ctx.moveTo(...intersect)
+    ctx.lineTo(pose.rightWrist.x, pose.rightWrist.y);
+    ctx.moveTo(...intersect)
+    ctx.lineTo(pose.leftWrist.x, pose.leftWrist.y);
+    ctx.stroke()
+
+    ctx.beginPath()
+    ctx.strokeStyle = verticalGrd;
+    ctx.moveTo(pose.nose.x, pose.nose.y);
+    ctx.lineTo(...intersect);
+    ctx.lineTo(intersect[0], intersect[1] + 600)
+    ctx.stroke()
+
+
+  } else if (SECTION === CAR_TUBE_SECTION) {
+
+    // this is the "you look like the tube!"
+    var intersect = averagePoints(pose.leftShoulder, pose.rightShoulder)
+
+    ctx.lineWidth = 50;
+
+    ctx.beginPath()
+    ctx.strokeStyle = 'red';
+    ctx.moveTo(...intersect)
+    ctx.lineTo(pose.rightWrist.x, pose.rightWrist.y);
+    ctx.moveTo(...intersect)
+    ctx.lineTo(pose.leftWrist.x, pose.leftWrist.y);
+    ctx.stroke()
+
+    ctx.beginPath()
+    ctx.strokeStyle = 'red';
+    ctx.moveTo(pose.nose.x, pose.nose.y);
+    ctx.lineTo(...intersect);
+    ctx.lineTo(intersect[0], intersect[1] + 600)
+    ctx.stroke()
+
+
   }
 }
 
@@ -267,7 +341,7 @@ function go() {
 
   vTubeIsYou.play()
 
-  SECTION = CLOUD_SECTION
+  SECTION = CAR_TUBE_SECTION
 
   // setTimeout(function() {
   //   oscillator.start();
