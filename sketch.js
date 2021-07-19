@@ -6,6 +6,16 @@ function find_angle(A, B, C) {
   return Math.abs(Math.acos((BC * BC + AB * AB - AC * AC) / (2 * BC * AB)) * (180 / Math.PI));
 }
 
+function scaleForParam(outputMax, actualIn, expectedMax) {
+  if (actualIn > expectedMax) {
+    return outputMax
+  }
+  if (actualIn < 0) {
+    return 0
+  }
+  return outputMax * (actualIn / expectedMax)
+}
+
 function averagePoints(pa, pb) {
   return [(pa.x + pb.x) / 2.0, (pa.y + pb.y) / 2.0]
 }
@@ -55,22 +65,22 @@ var startButton = document.getElementById("start");
 // IMAGES AND RESOURCES
 
 const sunflower_head_image = new Image(200, 200); // Using optional size for image
-sunflower_head_image.src = 'res/sunflower.png';
+sunflower_head_image.src = './res/sunflower.png';
 
 const earth_image = new Image(200, 200);
-earth_image.src = 'res/planets/earth.png';
+earth_image.src = './res/planets/earth.png';
 const europa_image = new Image(200, 200);
-europa_image.src = 'res/planets/europa.png';
+europa_image.src = './res/planets/europa.png';
 const jupiter_image = new Image(200, 200);
-jupiter_image.src = 'res/planets/jupiter.png';
+jupiter_image.src = './res/planets/jupiter.png';
 const mars_image = new Image(200, 200);
-mars_image.src = 'res/planets/mars.png';
+mars_image.src = './res/planets/mars.png';
 const pluto_image = new Image(200, 200);
-pluto_image.src = 'res/planets/pluto.png';
+pluto_image.src = './res/planets/pluto.png';
 const saturn_image = new Image(200, 200);
-saturn_image.src = 'res/planets/saturn.png';
+saturn_image.src = './res/planets/saturn.png';
 const venus_image = new Image(200, 200);
-venus_image.src = 'res/planets/venus.png';
+venus_image.src = './res/planets/venus.png';
 
 
 
@@ -95,7 +105,8 @@ var SPACE_TUBE_SECTION = 'SPACE_TUBE_SECTION'
 var SUNFLOWER_SECTION = 'SUNFLOWER_SECTION'
 var CLOUD_SECTION = 'CLOUD_SECTION'
 var CAR_TUBE_SECTION = 'CAR_TUBE_SECTION'
-var ENDED_SECTION = "ENDED_SECTION"
+var ENDED_SECTION = 'ENDED_SECTION'
+var TUBE_FINAL_SECTION = 'TUBE_FINAL_SECTION'
 var SECTION = NOT_STARTED_SECTION
 
 
@@ -121,7 +132,119 @@ for (var i = 0; i < steps_in_gradient; i++) {
 }
 
 
+//// ==================================== CLOUD_SECTION AUDIO STUFF ====================================
+var cloud_whiteNoiseA
+var cloud_whiteNoiseB
+var cloud_lowPassFilter
+var cloud_highPassFilter
 
+var cloud_lowPassFilter = new Pizzicato.Effects.LowPassFilter({
+  frequency: 400,
+  peak: 10
+});
+var cloud_highPassFilter = new Pizzicato.Effects.LowPassFilter({
+  frequency: 10,
+  peak: 10
+});
+var cloud_whiteNoiseA = new Pizzicato.Sound({
+  source: 'file',
+  options: {
+    path: './audio/noise.wav'
+  }
+}, function() {
+  console.log("loaded A")
+  cloud_whiteNoiseA.addEffect(cloud_lowPassFilter);
+  cloud_whiteNoiseA.volume = .05
+});
+var cloud_whiteNoiseB = new Pizzicato.Sound({
+  source: 'file',
+  options: {
+    path: './audio/noise.wav'
+  }
+}, function() {
+  console.log("loaded B")
+  cloud_whiteNoiseB.addEffect(cloud_highPassFilter);
+  cloud_whiteNoiseB.volume = .05
+});
+
+
+
+function startSection(section, stopPreviousSection) {
+  SECTION = section
+  console.log("here!")
+  console.log(section)
+  if (SECTION === NOT_STARTED_SECTION) {
+    if (stopPreviousSection) {
+
+    }
+  } else if (SECTION === SUNFLOWER_SECTION) {
+    if (stopPreviousSection) {
+
+    }
+  } else if (SECTION === SPACE_TUBE_SECTION) {
+    if (stopPreviousSection) {
+
+    }
+  } else if (SECTION === CLOUD_SECTION) {
+    if (stopPreviousSection) {
+
+    }
+    cloud_whiteNoiseA.play()
+    cloud_whiteNoiseB.play()
+
+
+  } else if (SECTION === TUBE_DUO_SECTION) {
+    if (stopPreviousSection) {
+      cloud_whiteNoiseA.stop()
+      cloud_whiteNoiseB.stop()
+    }
+  } else if (SECTION === CAR_TUBE_SECTION) {
+    if (stopPreviousSection) {
+
+    }
+  } else if (SECTION === TUBE_FINAL_SECTION) {
+    if (stopPreviousSection) {
+
+    }
+  } else if (SECTION === ENDED_SECTION) {
+    if (stopPreviousSection) {
+
+    }
+  } else {
+
+  }
+}
+
+
+function updateAudio(pose) {
+
+  if (SECTION === NOT_STARTED_SECTION) {
+
+  } else if (SECTION === SUNFLOWER_SECTION) {
+
+  } else if (SECTION === SPACE_TUBE_SECTION) {
+
+  } else if (SECTION === CLOUD_SECTION) {
+    cloud_lowPassFilter.frequency = (800 - pose.leftWrist.x)
+    cloud_highPassFilter.frequency = (800 - pose.rightWrist.x)
+    cloud_lowPassFilter.peak = (scaleForParam(20, pose.leftWrist.y, 600))
+    cloud_highPassFilter.peak = (scaleForParam(10, pose.rightWrist.y, 600))
+
+    cloud_whiteNoiseA.volume = (scaleForParam(0.05, 600 - pose.leftWrist.y, 600))
+    cloud_whiteNoiseB.volume = (scaleForParam(0.05, 600 - pose.rightWrist.y, 600))
+
+  } else if (SECTION === TUBE_DUO_SECTION) {
+
+  } else if (SECTION === CAR_TUBE_SECTION) {
+
+  } else if (SECTION === TUBE_FINAL_SECTION) {
+
+  } else if (SECTION === ENDED_SECTION) {
+
+  } else {
+
+  }
+}
 
 
 function drawBaseImage() {
@@ -202,10 +325,11 @@ function drawPoseImage(pose) {
       ctx.arc(cloud.x, cloud.y, 20, 0, 2 * Math.PI)
       ctx.stroke();
     }
-  } else if (SECTION === TUBE_DUO_SECTION) {
+  } else if (SECTION === TUBE_DUO_SECTION || SECTION === TUBE_FINAL_SECTION) {
 
     // this is the "you look like the tube!"
     var intersect = averagePoints(pose.leftShoulder, pose.rightShoulder)
+    var hips = averagePoints(pose.leftHip, pose.rightHip)
 
     ctx.lineWidth = 50;
 
@@ -219,9 +343,10 @@ function drawPoseImage(pose) {
 
     ctx.beginPath()
     ctx.strokeStyle = verticalGrd;
-    ctx.moveTo(pose.nose.x, pose.nose.y);
+    ctx.moveTo(pose.nose.x, pose.nose.y - 100);
     ctx.lineTo(...intersect);
-    ctx.lineTo(intersect[0], intersect[1] + 600)
+    ctx.lineTo(...hips)
+    ctx.lineTo(400, 1200)
     ctx.stroke()
 
 
@@ -229,34 +354,29 @@ function drawPoseImage(pose) {
 
     // this is the "you look like the tube!"
     var intersect = averagePoints(pose.leftShoulder, pose.rightShoulder)
+    var hips = averagePoints(pose.leftHip, pose.rightHip)
 
     ctx.lineWidth = 50;
+    ctx.strokeStyle = "#FF0000";
 
     ctx.beginPath()
-    ctx.strokeStyle = 'red';
     ctx.moveTo(...intersect)
+    ctx.lineTo(pose.rightElbow.x, pose.rightElbow.y);
     ctx.lineTo(pose.rightWrist.x, pose.rightWrist.y);
     ctx.moveTo(...intersect)
+    ctx.lineTo(pose.leftElbow.x, pose.leftElbow.y);
     ctx.lineTo(pose.leftWrist.x, pose.leftWrist.y);
     ctx.stroke()
 
     ctx.beginPath()
-    ctx.strokeStyle = 'red';
-    ctx.moveTo(pose.nose.x, pose.nose.y);
+    ctx.moveTo(pose.nose.x, pose.nose.y - 100);
     ctx.lineTo(...intersect);
-    ctx.lineTo(intersect[0], intersect[1] + 600)
+    ctx.lineTo(...hips)
+    ctx.lineTo(400, 1200)
     ctx.stroke()
-
-
   }
 }
 
-function updateAudioStates(pose) {
-  if (SECTION === NOT_STARTED_SECTION) {
-    return
-  }
-
-}
 
 // A function to draw the video and poses into the canvas.
 // This function is independent of the result of posenet
@@ -272,7 +392,7 @@ function drawCameraIntoCanvas() {
   if (poses.length > 0) {
     pose = poses[0].pose
     drawPoseImage(pose)
-    updateAudioStates(pose)
+    updateAudio(pose)
   }
 
   window.requestAnimationFrame(drawCameraIntoCanvas);
@@ -335,19 +455,47 @@ function go() {
   // biquadFilter.connect(audioCtx.destination);
   // // oscillator.start();
 
-
-
-
-
   vTubeIsYou.play()
 
-  SECTION = CAR_TUBE_SECTION
+  // startSection(CLOUD_SECTION, false)
 
-  // setTimeout(function() {
-  //   oscillator.start();
-  //   startButton.style.display = 'block'
-  // }, 23000);
+  startSection(NOT_STARTED_SECTION, true)
+
+  setTimeout(function() {
+    startSection(TUBE_DUO_SECTION, true)
+  }, 121000); // 2:01
+
+  setTimeout(function() {
+    startSection(SPACE_TUBE_SECTION, true)
+  }, 195000); // 3:15
+
+  setTimeout(function() {
+    startSection(SUNFLOWER_SECTION, true)
+  }, 249000); // 4:09
+
+  setTimeout(function() {
+    startSection(CLOUD_SECTION, true)
+  }, 307000); // 5:07
+
+  setTimeout(function() {
+    startSection(CAR_TUBE_SECTION, true)
+  }, 352000); // 5:52
+
+  setTimeout(function() {
+    startSection(TUBE_FINAL_SECTION, true)
+  }, 408000); // 6:48
+
+  setTimeout(function() {
+    startSection(ENDED_SECTION, true)
+  }, 477000); // 7:57
+
+}
 
 
-
+window.onclick = function() {
+  let context = Pizzicato.context
+  let source = context.createBufferSource()
+  source.buffer = context.createBuffer(1, 1, 22050)
+  source.connect(context.destination)
+  source.start()
 }
