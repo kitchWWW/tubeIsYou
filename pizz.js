@@ -691,7 +691,7 @@
     },
 
     /**
-	 	 * @deprecated - Use "release"
+     * @deprecated - Use "release"
      */
     sustain: {
       enumerable: true,
@@ -1149,7 +1149,7 @@
           return;
 
         this.options.time = time;
-        this.delayNode.delayTime.value = time;
+        this.delayNode.delayTime.linearRampToValueAtTime(time, Pz.context.currentTime + 0.05);
       }
     },
 
@@ -2278,7 +2278,7 @@
     this.inputNode.connect(this.dryGainNode);
     this.dryGainNode.connect(this.outputNode);
 
-    // wet mix	
+    // wet mix  
     this.inputNode.connect(this.vcInverter1);
     this.inputNode.connect(this.vcDiode4.node);
     this.vcInverter1.connect(this.vcDiode3.node);

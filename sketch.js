@@ -1,9 +1,66 @@
+var allSmoothedValues = {}
+function smooth(value, mapKey) {
+  if (allSmoothedValues[mapKey] == undefined) {
+    allSmoothedValues[mapKey] = [value]
+    return value
+  }
+  if (allSmoothedValues[mapKey].length > 10) {
+    allSmoothedValues[mapKey].shift()
+  }
+  allSmoothedValues[mapKey].push(value)
+  var total = 0;
+  for (var i = 0; i < allSmoothedValues[mapKey].length; i++) {
+    total += allSmoothedValues[mapKey][i];
+  }
+  var avg = total / allSmoothedValues[mapKey].length;
+  return avg;
+}
+function applyFade(startingValue, endingValue, param, time) {
+  console.log(startingValue)
+  var currentGain = startingValue
+  var myUpdatedInterval = setInterval(function() {
+    currentGain = currentGain + (endingValue - startingValue) / (time / 50)
+    console.log(currentGain)
+    param.linearRampToValueAtTime(currentGain, 0);
+    if ((startingValue < endingValue && currentGain > endingValue)
+      || (startingValue > endingValue && currentGain < endingValue)) {
+      clearInterval(myUpdatedInterval)
+    }
+  }, 50);
+
+}
+function radians_to_degrees(radians) {
+  var pi = Math.PI;
+  return radians * (180 / pi);
+}
+
+function find_slope(A, B) {
+  return find_angle({
+    x: A.x - 5,
+    y: A.y
+  }, A, B)
+}
+
+function scale(x, inmin, inmax, outmin, outmax) {
+  if (x < inmin) {
+    x = inmin
+  }
+  if (x > inmax) {
+    x = inmax
+  }
+  var indiff = inmax - inmin
+  var outdiff = outmax - outmin
+  var scale = outdiff / indiff
+  var xscaleable = x - inmin
+  return outmin + (xscaleable * scale)
+}
+
 
 function find_angle(A, B, C) {
-  var AB = Math.sqrt(Math.pow(B[0] - A[0], 2) + Math.pow(B[1] - A[1], 2));
-  var BC = Math.sqrt(Math.pow(B[0] - C[0], 2) + Math.pow(B[1] - C[1], 2));
-  var AC = Math.sqrt(Math.pow(C[0] - A[0], 2) + Math.pow(C[1] - A[1], 2));
-  return Math.abs(Math.acos((BC * BC + AB * AB - AC * AC) / (2 * BC * AB)) * (180 / Math.PI));
+  var AB = Math.sqrt(Math.pow(B.x - A.x, 2) + Math.pow(B.y - A.y, 2));
+  var BC = Math.sqrt(Math.pow(B.x - C.x, 2) + Math.pow(B.y - C.y, 2));
+  var AC = Math.sqrt(Math.pow(C.x - A.x, 2) + Math.pow(C.y - A.y, 2));
+  return radians_to_degrees(Math.acos((BC * BC + AB * AB - AC * AC) / (2 * BC * AB)));
 }
 
 function scaleForParam(outputMax, actualIn, expectedMax) {
@@ -41,18 +98,13 @@ function drawCenteredImage(x, y, sideLength, image) {
   ctx.drawImage(image, x - (sideLength / 2), y - (sideLength / 2), sideLength, sideLength)
 }
 
-// Copyright (c) 2019 ml5
-//
-// This software is released under the MIT License.
-// https://opensource.org/licenses/MIT
-
 /* ===
 ml5 Example
 PoseNet using p5.js
 === */
 /* eslint-disable */
 
-// Grab elements, create settings, etc.
+
 var video = document.getElementById("video");
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
@@ -62,7 +114,20 @@ var startButton = document.getElementById("start");
 
 
 
-// IMAGES AND RESOURCES
+// ==================================== IMAGES AND RESOURCES ====================================
+
+var NOT_STARTED_SECTION = 'NOT_STARTED_SECTION'
+var OPENING_TUBE_TORIAL = 'OPENING_TUBE_TORIAL'
+var TUBE_DUO_SECTION = 'TUBE_DUO_SECTION'
+var SPACE_TUBE_SECTION = 'SPACE_TUBE_SECTION'
+var SUNFLOWER_SECTION = 'SUNFLOWER_SECTION'
+var CLOUD_SECTION = 'CLOUD_SECTION'
+var CAR_TUBE_SECTION = 'CAR_TUBE_SECTION'
+var ENDED_SECTION = 'ENDED_SECTION'
+var TUBE_FINAL_SECTION = 'TUBE_FINAL_SECTION'
+var SECTION = NOT_STARTED_SECTION
+
+
 
 const sunflower_head_image = new Image(200, 200); // Using optional size for image
 sunflower_head_image.src = './res/sunflower.png';
@@ -83,37 +148,6 @@ const venus_image = new Image(200, 200);
 venus_image.src = './res/planets/venus.png';
 
 
-
-
-
-// The detected positions will be inside an array
-let poses = [];
-
-// Create a webcam capture
-if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-  navigator.mediaDevices.getUserMedia({
-    video: true
-  }).then(function(stream) {
-    video.srcObject = stream;
-    video.play();
-  });
-}
-
-var NOT_STARTED_SECTION = 'NOT_STARTED_SECTION'
-var TUBE_DUO_SECTION = 'TUBE_DUO_SECTION'
-var SPACE_TUBE_SECTION = 'SPACE_TUBE_SECTION'
-var SUNFLOWER_SECTION = 'SUNFLOWER_SECTION'
-var CLOUD_SECTION = 'CLOUD_SECTION'
-var CAR_TUBE_SECTION = 'CAR_TUBE_SECTION'
-var ENDED_SECTION = 'ENDED_SECTION'
-var TUBE_FINAL_SECTION = 'TUBE_FINAL_SECTION'
-var SECTION = NOT_STARTED_SECTION
-
-
-
-
-
-
 // Create gradient
 var verticalGrd = ctx.createLinearGradient(0, 0, 0, 600);
 var steps_in_gradient = 200
@@ -130,6 +164,29 @@ for (var i = 0; i < steps_in_gradient; i++) {
   horizontalGrd.addColorStop((i / steps_in_gradient), "black");
   horizontalGrd.addColorStop((i / steps_in_gradient) + (1 / (steps_in_gradient * 2)), "grey");
 }
+
+
+
+// The detected positions will be inside an array
+let poses = [];
+
+function askPermissionForVideo() {
+  // Create a webcam capture
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({
+      video: true
+    }).then(function(stream) {
+      video.srcObject = stream;
+      video.play();
+    });
+  }
+}
+askPermissionForVideo()
+
+
+
+
+
 
 
 //// ==================================== CLOUD_SECTION AUDIO STUFF ====================================
@@ -167,7 +224,133 @@ var cloud_whiteNoiseB = new Pizzicato.Sound({
   cloud_whiteNoiseB.volume = .05
 });
 
+//// ==================================== MODULAR SYNTH AUDIO STUFF ====================================
 
+var AudioContext = window.AudioContext ||
+window.webkitAudioContext;
+
+const modular_context = new AudioContext();
+const modular_masterVolume = modular_context.createGain();
+modular_masterVolume.connect(modular_context.destination);
+modular_masterVolume.gain.setValueAtTime(0.0, 0);
+
+const modular_osc = modular_context.createOscillator();
+const modular_noteGain = modular_context.createGain();
+const modular_lfo = modular_context.createOscillator();
+const modular_lfoGain = modular_context.createGain();
+
+const modular_biquadFilter = modular_context.createBiquadFilter();
+
+modular_biquadFilter.frequency.value = 300;
+modular_biquadFilter.Q.value = 10
+
+
+//// ==================================== MODULAR SYNTH AUDIO STUFF ====================================
+
+const thermin_masterVolume = modular_context.createGain();
+thermin_masterVolume.connect(modular_context.destination);
+thermin_masterVolume.gain.setValueAtTime(0.0, 0);
+
+const thermin_osc = modular_context.createOscillator();
+const thermin_noteGain = modular_context.createGain();
+const thermin_lfo = modular_context.createOscillator();
+const thermin_lfoGain = modular_context.createGain();
+
+
+//// ==================================== SPACE TUBE CONTINUE TEXT AUDIO STUFF ====================================
+var space_audioFile
+var space_delay
+
+space_delay = new Pizzicato.Effects.Delay({
+  feedback: 0.6,
+  time: 0.4,
+  mix: 0.5
+});
+var space_audioFile = new Pizzicato.Sound({
+  source: 'file',
+  options: {
+    path: './audio/WeContinueTheTube.wav'
+  }
+}, function() {
+  console.log("loaded spaceFile")
+  space_audioFile.addEffect(space_delay);
+  space_audioFile.volume = .2
+});
+
+
+
+//// ==================================== CAR TUBE TEXT AUDIO STUFF ====================================
+var car_audioFile
+var car_delay
+
+car_delay = new Pizzicato.Effects.Delay({
+  feedback: 0.6,
+  time: 0.4,
+  mix: 0.5
+});
+var car_audioFile = new Pizzicato.Sound({
+  source: 'file',
+  options: {
+    path: './audio/TubeVoiceEnding.wav'
+  }
+}, function() {
+  console.log("loaded car file")
+  car_audioFile.addEffect(car_delay);
+  car_audioFile.volume = .2
+});
+
+
+//// ==================================== FLOWER AUDIO STUFF ====================================
+var flower_e1
+var flower_e2
+var flower_e3
+var flower_e4
+
+var flower_e1 = new Pizzicato.Sound({
+  source: 'file',
+  options: {
+    path: './audio/e1.wav'
+  }
+}, function() {
+  console.log("loaded flower_e1")
+  flower_e1.volume = 0
+  flower_e1.loop = true
+});
+
+var flower_e2 = new Pizzicato.Sound({
+  source: 'file',
+  options: {
+    path: './audio/e2.wav'
+  }
+}, function() {
+  console.log("loaded flower_e1")
+  flower_e2.volume = 0
+  flower_e2.loop = true
+});
+
+var flower_e3 = new Pizzicato.Sound({
+  source: 'file',
+  options: {
+    path: './audio/e3.wav'
+  }
+}, function() {
+  console.log("loaded flower_e3")
+  flower_e3.volume = 0
+  flower_e3.loop = true
+});
+
+var flower_e4 = new Pizzicato.Sound({
+  source: 'file',
+  options: {
+    path: './audio/e4.wav'
+  }
+}, function() {
+  console.log("loaded flower_e4")
+  flower_e4.volume = 0
+  flower_e4.loop = true
+});
+
+//// ==================================== END CUSTOM AUDIO SETUP STUFF ====================================
 
 function startSection(section, stopPreviousSection) {
   SECTION = section
@@ -175,54 +358,92 @@ function startSection(section, stopPreviousSection) {
   console.log(section)
   if (SECTION === NOT_STARTED_SECTION) {
     if (stopPreviousSection) {
-
+      // nothing to do
     }
-  } else if (SECTION === SUNFLOWER_SECTION) {
+  } else if (SECTION === OPENING_TUBE_TORIAL) {
     if (stopPreviousSection) {
-
+      // nothing to do
     }
+    applyFade(0, .02, modular_masterVolume.gain, 20000)
+  } else if (SECTION === TUBE_DUO_SECTION) {
+    if (stopPreviousSection) {
+      applyFade(0.02, 0, modular_masterVolume.gain, 1000)
+    }
+    space_audioFile.play()
+
   } else if (SECTION === SPACE_TUBE_SECTION) {
     if (stopPreviousSection) {
-
+      // really should call space_audioFile.stop, but we'll let it play out
     }
+    console.log("hello! doing the thing!")
+    applyFade(0, .1, thermin_masterVolume.gain, 1000)
+
+  } else if (SECTION === SUNFLOWER_SECTION) {
+    if (stopPreviousSection) {
+      applyFade(.1, 0, thermin_masterVolume.gain, 1000)
+    }
+    flower_e1.play()
+    flower_e2.play()
+    flower_e3.play()
+    flower_e4.play()
+    // do the actual sunflower sounds
+
   } else if (SECTION === CLOUD_SECTION) {
     if (stopPreviousSection) {
-
+      flower_e1.stop()
+      flower_e2.stop()
+      flower_e3.stop()
+      flower_e4.stop()
     }
     cloud_whiteNoiseA.play()
     cloud_whiteNoiseB.play()
-
-
-  } else if (SECTION === TUBE_DUO_SECTION) {
+  } else if (SECTION === CAR_TUBE_SECTION) {
     if (stopPreviousSection) {
       cloud_whiteNoiseA.stop()
       cloud_whiteNoiseB.stop()
     }
-  } else if (SECTION === CAR_TUBE_SECTION) {
-    if (stopPreviousSection) {
-
-    }
+    car_audioFile.play()
   } else if (SECTION === TUBE_FINAL_SECTION) {
     if (stopPreviousSection) {
-
+      // same thing, we will let it play out
     }
+    applyFade(0, .02, modular_masterVolume.gain, 1000)
   } else if (SECTION === ENDED_SECTION) {
     if (stopPreviousSection) {
-
+      applyFade(0.02, 0, modular_masterVolume.gain, 100) // much faster
     }
   } else {
-
+    console.log("MISSED A THING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
   }
 }
 
 
 function updateAudio(pose) {
+  rightArmOpen = smooth(find_angle(pose.rightShoulder, pose.rightElbow, pose.rightWrist), 'rightArmOpen')
+  leftArmOpen = smooth(find_angle(pose.leftShoulder, pose.leftElbow, pose.leftWrist), 'leftArmOpen')
+  rightArmUp = smooth(find_angle(pose.rightHip, pose.rightShoulder, pose.rightWrist), 'rightArmUp')
+  leftArmUp = smooth(find_angle(pose.leftHip, pose.leftShoulder, pose.leftWrist), 'leftArmUp')
+  headAngle = smooth(find_slope(pose.rightEar, pose.leftEar), 'headAngle')
+
 
   if (SECTION === NOT_STARTED_SECTION) {
 
+  } else if (SECTION === OPENING_TUBE_TORIAL || SECTION === TUBE_FINAL_SECTION) {
+    modular_lfoGain.gain.setValueAtTime(scale(rightArmOpen, 0, 180, 0, 300), 0)
+    modular_lfo.frequency.setValueAtTime(scale(leftArmOpen, 0, 180, 0, 20), 0);
+    modular_osc.frequency.setValueAtTime(scale(leftArmUp, 0, 180, 150, 700), 0)
+    var filterFreq = scale(rightArmUp, 0, 180, 2, 140)
+    var filterQ = scale(headAngle, 0, 180, 0, 5)
+    modular_biquadFilter.frequency.setValueAtTime(filterFreq * filterFreq, 0)
+    modular_biquadFilter.Q.setValueAtTime(filterQ * filterQ, 0)
   } else if (SECTION === SUNFLOWER_SECTION) {
-
+    flower_e1.volume = Math.pow(scale(rightArmOpen, 0, 180, 0, .3), 2)
+    flower_e2.volume = Math.pow(scale(leftArmOpen, 0, 180, 0, .3), 2)
+    flower_e3.volume = Math.pow(scale(rightArmUp, 0, 180, 0, .3), 2)
+    flower_e4.volume = Math.pow(scale(leftArmUp, 0, 180, 0, .3), 2)
   } else if (SECTION === SPACE_TUBE_SECTION) {
+    thermin_lfo.frequency.setValueAtTime(scale(rightArmOpen, 0, 180, 0, 20), 0);
+    thermin_osc.frequency.setValueAtTime(scale(leftArmUp, 0, 180, 150, 700), 0)
 
   } else if (SECTION === CLOUD_SECTION) {
     cloud_lowPassFilter.frequency = (800 - pose.leftWrist.x)
@@ -234,10 +455,15 @@ function updateAudio(pose) {
     cloud_whiteNoiseB.volume = (scaleForParam(0.05, 600 - pose.rightWrist.y, 600))
 
   } else if (SECTION === TUBE_DUO_SECTION) {
+    space_delay.time = Math.abs(.5 - scale(rightArmUp, 0, 180, 0, 1))
+    space_delay.mix = scale(leftArmOpen, 0, 180, 0, 1)
+    space_delay.feedback = Math.abs(.5 - scale(rightArmOpen, 0, 180, 0, 1))
 
   } else if (SECTION === CAR_TUBE_SECTION) {
 
-  } else if (SECTION === TUBE_FINAL_SECTION) {
+    car_delay.time = Math.abs(.5 - scale(leftArmOpen, 0, 180, 0, 1))
+    car_delay.mix = scale(rightArmUp, 0, 180, 0, 1)
+    car_delay.feedback = Math.abs(.5 - scale(leftArmUp, 0, 180, 0, 1))
 
   } else if (SECTION === ENDED_SECTION) {
 
@@ -249,7 +475,7 @@ function updateAudio(pose) {
 
 function drawBaseImage() {
   ctx.clearRect(0, 0, 800, 600);
-  if (SECTION === NOT_STARTED_SECTION) {
+  if (SECTION === NOT_STARTED_SECTION || SECTION === OPENING_TUBE_TORIAL) {
     // 
     ctx.save();
     ctx.globalAlpha = 0.4;
@@ -266,6 +492,8 @@ function drawBaseImage() {
 
   } else if (SECTION === CAR_TUBE_SECTION) {
 
+  } else if (SECTION === TUBE_FINAL_SECTION) {
+
   } else if (SECTION === ENDED_SECTION) {
     ctx.drawImage(video, 0, 0, 800, 600);
   } else {
@@ -278,7 +506,6 @@ function drawPoseImage(pose) {
   if (SECTION === NOT_STARTED_SECTION) {
     return
   } else if (SECTION === SUNFLOWER_SECTION) {
-    console.log(pose)
     ctx.beginPath(); // Start a new path
     ctx.lineWidth = 50;
     ctx.strokeStyle = "#88CC22";
@@ -421,45 +648,49 @@ let gainNode = null
 let audioCtx = null
 let biquadFilter = null
 
-function start() {
-  vTubeIsYou.play()
-// vwholething.style.display = 'inline'
-// vintro.style.display = 'none'
-// vintro.style.marginRight = '-400px';
-// vwholething.play()
-// vcello.play()
-}
-
 function go() {
-  // create web audio api context
-  // audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-  // // create Oscillator node
-  // oscillator = audioCtx.createOscillator();
-  // gainNode = audioCtx.createGain();
-  // gainNode.gain.setValueAtTime(0, audioCtx.currentTime)
-  // oscillator.type = 'square';
-  // oscillator.frequency.setValueAtTime(440, audioCtx.currentTime); // value in hertz
+  // start the thing going, but silently.
+  modular_lfo.frequency.setValueAtTime(200, 0);
+  modular_lfo.connect(modular_lfoGain);
+  modular_lfo.start(0);
+  modular_lfoGain.gain.setValueAtTime(200, 0)
+  modular_lfoGain.connect(modular_osc.frequency)
+  modular_osc.type = 'sawtooth';
+  modular_osc.frequency.setValueAtTime(220, 0);
+  modular_osc.start(0);
+  modular_osc.connect(modular_biquadFilter);
+  modular_biquadFilter.connect(modular_noteGain)
+  modular_noteGain.connect(modular_masterVolume);
+
+  // start the thing going, but silently.
+  thermin_lfo.frequency.setValueAtTime(5, 0);
+  thermin_lfo.connect(thermin_lfoGain);
+  thermin_lfo.start(0);
+  thermin_lfoGain.gain.setValueAtTime(10, 0)
+  thermin_lfoGain.connect(thermin_osc.frequency)
+  thermin_osc.type = 'sine';
+  thermin_osc.frequency.setValueAtTime(220, 0);
+  thermin_osc.start(0);
+  thermin_osc.connect(thermin_noteGain);
+  thermin_noteGain.connect(thermin_masterVolume);
 
 
-  // biquadFilter = audioCtx.createBiquadFilter();
 
-  // // Manipulate the Biquad filter
 
-  // biquadFilter.type = "lowpass";
-  // biquadFilter.frequency.setValueAtTime(220, audioCtx.currentTime);
-  // biquadFilter.gain.setValueAtTime(1, audioCtx.currentTime);
-
-  // oscillator.connect(gainNode);
-  // gainNode.connect(biquadFilter);
-  // biquadFilter.connect(audioCtx.destination);
-  // // oscillator.start();
-
+  // start the whole video
   vTubeIsYou.play()
 
-  // startSection(CLOUD_SECTION, false)
+  // put section to test here
+  // startSection(SUNFLOWER_SECTION, false)
 
+
+  // // un comment this before pushing
   startSection(NOT_STARTED_SECTION, true)
+
+  setTimeout(function() {
+    startSection(OPENING_TUBE_TORIAL, true)
+  }, 52000); // 0:52
 
   setTimeout(function() {
     startSection(TUBE_DUO_SECTION, true)
