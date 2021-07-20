@@ -43,6 +43,10 @@ button{
   display: none;
 }
 
+#onBlack {
+  color: grey;
+}
+
 
 
 /* The Modal (background) */
@@ -62,7 +66,7 @@ button{
 
 /* Modal Content */
 .modal-content {
-  background-color: #fefefe;
+  background-color: #f0f0f0;
   margin: auto;
   padding: 10px;
   border: 1px solid #888;
@@ -71,17 +75,17 @@ button{
 }
 
 a:link {
-  color: black;
+  color: grey;
 }
 
 a:visited {
-  color: black;
+  color: grey;
 }
 
 a:hover {
-  color: grey;
+  color: darkgrey;
 }
 
 a:active {
-  color: grey;
+  color: darkgrey;
 } 
