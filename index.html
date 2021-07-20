@@ -2,6 +2,9 @@
 
 <head>
   <meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tourney:ital@1&display=swap" rel="stylesheet">
 
   <title>Tube Is You</title>
   <script src="https://unpkg.com/ml5@0.3.1/dist/ml5.min.js"></script>
@@ -10,20 +13,53 @@
  </head>
 
 <body>
-  <h1>Tube Is You</h1>
-	<button id="go" onclick="go()">start</button>
+
+<!-- The Modal -->
+<div id="myModal" class="modal">
+
+  <!-- Modal content -->
+  <div class="modal-content">
+    <center>
+      <h1>Tube is You</h1>
+    <button id="go" onclick="go()">start</button>
+    <button id="loading"> <i>loading...</i> </button>
+    <button id="askPermission" onclick="askPermissionForVideo()">please click so we can use the camera!</button>
+    </center>
+    <p>&nbsp; ~ welcome ~
+      <br><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;~ to the tube ~
+      <br><br>
+      This website will turn you into the tube. Please let us use your camera so we can project you into the tube. You will be asked to stand up and back away from your laptop, so if you can get to a large open area, that would be beneficial to the ~ transformation ~ process.
+      <br><br>
+      Performers are <a href="https://spacepantsmusic.com/" target="_blank">SPACEPANTS</a>, Jen and Diana. Installation by <a href="http://brianellissound.com/" target="_blank">Brian Ellis</a>.
+
+
+    </p>
+  </div>
+
+</div>
+
+
+
+
+
+
 	<br>
   <center>
 
-  <canvas id="canvas" width="800" height="600"></canvas> 
-
-  <video id="vTubeIsYou" width="800" height="600">
+  <canvas id="canvas" width="800" height="600"></canvas><video id="vTubeIsYou" width="800" height="600">
   	<source src="./res/actualWholeThing.mp4">
   	</video>
 
 </center>
   <video id="video" width="640" height="480" autoplay style="display: none"></video>
   <script src="./sketch.js"></script>
+
+
+
+
+
+
 </body>
 
 </html>
