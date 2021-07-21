@@ -1,3 +1,14 @@
+function smoothPose(pose) {
+  var newPose = {}
+  for (const [key, value] of Object.entries(pose)) {
+    newPose[key] = {
+      x: smooth(value.x, 'pose-x-' + key),
+      y: smooth(value.y, 'pose-y-' + key)
+    }
+  }
+  return newPose
+}
+
 var allSmoothedValues = {}
 function smooth(value, mapKey) {
   if (allSmoothedValues[mapKey] == undefined) {
@@ -410,6 +421,7 @@ function startSection(section, stopPreviousSection) {
       cloud_whiteNoiseA.stop()
       cloud_whiteNoiseB.stop()
     }
+    console.log("playing the file!!!!!")
     car_audioFile.play()
   } else if (SECTION === TUBE_FINAL_SECTION) {
     if (stopPreviousSection) {
@@ -440,7 +452,7 @@ function updateAudio(pose) {
 
   } else if (SECTION === NOT_STARTED_SECTION) {
 
-  } else if (SECTION === OPENING_TUBE_TORIAL || SECTION === TUBE_FINAL_SECTION) {
+  } else if (SECTION === OPENING_TUBE_TORIAL || SECTION === TUBE_FINAL_SECTION || SECTION === TUBE_GONE_FINAL_SECTION) {
     modular_lfoGain.gain.setValueAtTime(scale(rightArmOpen, 0, 180, 0, 300), 0)
     modular_lfo.frequency.setValueAtTime(scale(leftArmOpen, 0, 180, 0, 20), 0);
     modular_osc.frequency.setValueAtTime(scale(leftArmUp, 0, 180, 150, 700), 0)
@@ -515,7 +527,8 @@ function drawBaseImage() {
   }
 }
 var clouds = []
-function drawPoseImage(pose) {
+function drawPoseImage(roughpose) {
+  pose = smoothPose(roughpose)
   if (SECTION === NOT_STARTED_SECTION || SECTION === ACTUALLY_NOT_STARTED) {
     return
   } else if (SECTION === SUNFLOWER_SECTION) {
@@ -594,7 +607,7 @@ function drawPoseImage(pose) {
 
     // this is the "you look like the tube!"
     var intersect = averagePoints(pose.leftShoulder, pose.rightShoulder)
-    intersect = [intersect[0], intersect[1] + 150] // lower it so that it looks more car-flailing like
+    intersect = [intersect[0], intersect[1] + 100] // lower it so that it looks more car-flailing like
     var hips = averagePoints(pose.leftHip, pose.rightHip)
 
     ctx.lineWidth = 50;
@@ -610,7 +623,7 @@ function drawPoseImage(pose) {
     ctx.stroke()
 
     ctx.beginPath()
-    ctx.moveTo(pose.nose.x, pose.nose.y - 100);
+    ctx.moveTo(pose.nose.x, pose.nose.y - 50);
     ctx.lineTo(...intersect);
     ctx.lineTo(...hips)
     ctx.lineTo(400, 1200)
@@ -699,9 +712,6 @@ function go() {
 
   // start the whole video
   vTubeIsYou.play()
-
-  // put section to test here
-  // startSection(TUBE_GONE_FINAL_SECTION, false)
 
 
   // // un comment this before pushing
